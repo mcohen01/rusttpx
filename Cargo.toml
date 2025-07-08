@@ -1,0 +1,90 @@
+[package]
+name = "rusttpx"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "A next-generation HTTP client for Rust, inspired by Python's HTTPX"
+license = "BSD-3-Clause"
+repository = "https://github.com/yourusername/rusttpx"
+keywords = ["http", "client", "async", "request", "httpx"]
+categories = ["web-programming::http-client"]
+
+[dependencies]
+# Core HTTP functionality
+reqwest = { version = "0.11", features = ["json", "stream", "multipart"] }
+tokio = { version = "1.0", features = ["full"] }
+futures = "0.3"
+
+# HTTP/2 support
+h2 = { version = "0.3", optional = true }
+
+# URL parsing and manipulation
+url = "2.4"
+
+# JSON handling
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Async traits
+async-trait = "0.1"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+log = "0.4"
+
+# Time and timeouts
+tokio-timeout = "0.1"
+
+# Cookie handling
+cookie = "0.18"
+
+# Compression (optional)
+flate2 = { version = "1.0", optional = true }
+brotli = { version = "3.3", optional = true }
+
+# SSL/TLS
+rustls = "0.21"
+rustls-native-certs = "0.7"
+
+# Multipart form data
+multipart = "0.18"
+
+# HTTP types
+http = "0.2"
+
+# Random number generation
+rand = "0.8"
+
+# Hex encoding
+hex = "0.4"
+
+# Base64 encoding
+base64 = "0.21"
+
+# Stream utilities for examples
+futures-util = "0.3"
+
+# Command line interface (optional)
+clap = { version = "4.0", features = ["derive"], optional = true }
+tokio-console = { version = "0.1", optional = true }
+
+[dev-dependencies]
+tokio-test = "0.4"
+wiremock = "0.5"
+
+[features]
+default = ["http2", "compression"]
+http2 = ["h2"]
+compression = ["flate2", "brotli"]
+cli = ["clap", "tokio-console"]
+full = ["http2", "compression", "cli"]
+
+[[bin]]
+name = "rusttpx"
+path = "src/bin/main.rs"
+required-features = ["cli"] 
