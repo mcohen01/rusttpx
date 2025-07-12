@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use http::{HeaderMap, HeaderValue};
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 
-use crate::error::{Error, Result};
+use crate::error::Result;
 
 /// Authentication configuration for HTTP requests
 ///

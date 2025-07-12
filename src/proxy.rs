@@ -191,7 +191,7 @@ impl ProxyConfig {
         }
 
         // Apply authentication if available
-        if let Some(auth) = self.auth {
+        if let Some(_auth) = self.auth {
             // Note: Reqwest handles proxy auth automatically from the URL
             // This is a placeholder for future implementation
         }

@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::collections::HashMap;
 use reqwest::multipart::Form;
-use serde::{Serialize, Deserialize};
+use serde::Serialize;
 
 use crate::error::{Error, Result};
 

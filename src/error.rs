@@ -1,4 +1,3 @@
-use std::fmt;
 use thiserror::Error;
 
 /// Result type for RustTPX operations

@@ -1,10 +1,8 @@
 use std::time::Duration;
 use std::sync::Arc;
-use async_trait::async_trait;
 use reqwest::{Client as ReqwestClient, ClientBuilder as ReqwestBuilder};
 use http::{Method, HeaderMap, HeaderValue};
 use url::Url;
-use serde_json::Value;
 
 use crate::error::{Error, Result};
 use crate::request::{Request, RequestBuilder};
@@ -258,7 +256,7 @@ impl ClientBuilder {
     }
 
     /// Set the user agent
-    pub fn user_agent(mut self, user_agent: &str) -> Result<Self> {
+    pub fn user_agent(self, user_agent: &str) -> Result<Self> {
         self.default_header("User-Agent", user_agent)
     }
 

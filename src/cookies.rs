@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::Mutex;
 use cookie::{Cookie, CookieJar as CookieJarInner};
 use url::Url;
@@ -38,7 +37,7 @@ impl CookieJar {
     }
 
     /// Add a cookie from a response header
-    pub fn add_cookie_from_response(&self, cookie_str: &str, url: &Url) {
+    pub fn add_cookie_from_response(&self, cookie_str: &str, _url: &Url) {
         if let Ok(mut jar) = self.inner.lock() {
             if let Ok(cookie) = Cookie::parse(cookie_str) {
                 jar.add(cookie.into_owned());
@@ -81,13 +80,13 @@ impl CookieJar {
     pub fn remove(&self, name: &str) {
         if let Ok(mut jar) = self.inner.lock() {
             let name_owned = name.to_string();
-            jar.remove(Cookie::build(name_owned).finish());
+            jar.remove(Cookie::build(name_owned).build());
         }
     }
 
     /// Clear all cookies
     pub fn clear(&self) {
-        if let Ok(mut jar) = self.inner.lock() {
+        if let Ok(_jar) = self.inner.lock() {
             // Note: CookieJar doesn't have a clear method in this version
             // jar.clear();
         }

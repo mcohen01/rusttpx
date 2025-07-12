@@ -2,8 +2,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use async_trait::async_trait;
 use reqwest::{Client as ReqwestClient, Request as ReqwestRequest, Response as ReqwestResponse};
-use http::{Method, HeaderMap, Uri};
-use url::Url;
 
 use crate::error::{Error, Result};
 use crate::timeout::TimeoutConfig;

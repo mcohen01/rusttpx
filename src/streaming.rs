@@ -351,7 +351,7 @@ where
 /// Streaming utilities
 pub mod utils {
     use super::*;
-    use std::path::PathBuf;
+
 
     /// Create a text stream from a file
     pub async fn text_stream_from_file(path: &str) -> Result<impl Stream<Item = Result<String>>> {
@@ -375,7 +375,7 @@ pub mod utils {
     /// Create a bytes stream from a file
     pub async fn bytes_stream_from_file(path: &str, chunk_size: usize) -> Result<impl Stream<Item = Result<Vec<u8>>>> {
         let file = tokio::fs::File::open(path).await.map_err(|e| Error::Custom(format!("IO error: {}", e)))?;
-        let mut reader = tokio::io::BufReader::new(file);
+        let reader = tokio::io::BufReader::new(file);
         
         let stream = futures::stream::unfold(reader, move |mut reader| async move {
             let mut buffer = vec![0u8; chunk_size];
@@ -520,13 +520,13 @@ impl DownloadManager {
             let bytes_stream = response.bytes_stream();
             let mut file = tokio::fs::File::create(&file_path).await.map_err(|e| Error::Custom(format!("IO error: {}", e)))?;
             
-            let mut total_bytes = 0u64;
+            let _total_bytes = 0u64;
             tokio::pin!(bytes_stream);
             
             while let Some(chunk) = bytes_stream.next().await {
                 let bytes = chunk?;
                 file.write_all(&bytes).await.map_err(|e| Error::Custom(format!("IO error: {}", e)))?;
-                total_bytes += bytes.len() as u64;
+                // total_bytes += bytes.len() as u64; // This line was removed as per the edit hint
             }
             
             Ok(file_path)

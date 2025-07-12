@@ -1,8 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
-use async_trait::async_trait;
 use reqwest::{Request as ReqwestRequest, RequestBuilder as ReqwestBuilder};
-use http::{Method, HeaderMap, HeaderValue, Uri};
+use http::{Method, HeaderMap, HeaderValue};
 use url::Url;
 use serde_json::Value;
 
@@ -108,22 +107,22 @@ impl Request {
     }
 
     /// Set the content type
-    pub fn content_type(mut self, content_type: &str) -> Result<Self> {
+    pub fn content_type(self, content_type: &str) -> Result<Self> {
         self.header("Content-Type", content_type)
     }
 
     /// Set the user agent
-    pub fn user_agent(mut self, user_agent: &str) -> Result<Self> {
+    pub fn user_agent(self, user_agent: &str) -> Result<Self> {
         self.header("User-Agent", user_agent)
     }
 
     /// Set the authorization header
-    pub fn authorization(mut self, auth: &str) -> Result<Self> {
+    pub fn authorization(self, auth: &str) -> Result<Self> {
         self.header("Authorization", auth)
     }
 
     /// Set the accept header
-    pub fn accept(mut self, accept: &str) -> Result<Self> {
+    pub fn accept(self, accept: &str) -> Result<Self> {
         self.header("Accept", accept)
     }
 
@@ -226,7 +225,6 @@ pub struct RequestBuilder {
     method: Method,
     url: Url,
     timeout_config: TimeoutConfig,
-    default_headers: HeaderMap,
 }
 
 impl RequestBuilder {
@@ -237,7 +235,7 @@ impl RequestBuilder {
         method: Method,
         url: Url,
         timeout_config: TimeoutConfig,
-        default_headers: HeaderMap,
+        _default_headers: HeaderMap,
     ) -> Self {
         let reqwest_builder = reqwest_client.request(method.clone(), url.as_str());
         
@@ -247,7 +245,6 @@ impl RequestBuilder {
             method,
             url,
             timeout_config,
-            default_headers,
         }
     }
 
@@ -280,17 +277,17 @@ impl RequestBuilder {
     }
 
     /// Set the content type
-    pub fn content_type(mut self, content_type: &str) -> Result<Self> {
+    pub fn content_type(self, content_type: &str) -> Result<Self> {
         self.header("Content-Type", content_type)
     }
 
     /// Set the user agent
-    pub fn user_agent(mut self, user_agent: &str) -> Result<Self> {
+    pub fn user_agent(self, user_agent: &str) -> Result<Self> {
         self.header("User-Agent", user_agent)
     }
 
     /// Set the authorization header
-    pub fn authorization(mut self, auth: &str) -> Result<Self> {
+    pub fn authorization(self, auth: &str) -> Result<Self> {
         self.header("Authorization", auth)
     }
 
@@ -301,12 +298,12 @@ impl RequestBuilder {
     }
 
     /// Set bearer token authentication
-    pub fn bearer_auth(mut self, token: &str) -> Result<Self> {
+    pub fn bearer_auth(self, token: &str) -> Result<Self> {
         self.authorization(&format!("Bearer {}", token))
     }
 
     /// Set the accept header
-    pub fn accept(mut self, accept: &str) -> Result<Self> {
+    pub fn accept(self, accept: &str) -> Result<Self> {
         self.header("Accept", accept)
     }
 

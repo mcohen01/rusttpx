@@ -1,11 +1,8 @@
 use std::sync::Arc;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 use futures::Stream;
 use reqwest::{Response as ReqwestResponse, StatusCode};
 use http::{HeaderMap, HeaderValue};
 use serde_json::Value;
-use tokio::io::AsyncRead;
 
 use crate::error::{Error, Result, StatusError};
 use crate::cookies::CookieJar;
@@ -27,7 +24,7 @@ pub struct Response {
 impl Response {
     /// Create a response from a reqwest response
     pub async fn from_reqwest_response(
-        mut reqwest_response: ReqwestResponse,
+        reqwest_response: ReqwestResponse,
         cookie_jar: Arc<CookieJar>,
     ) -> Result<Self> {
         // Extract cookies from response headers
@@ -312,7 +309,7 @@ impl ResponseBuilder {
     }
 
     /// Set the content type
-    pub fn content_type(mut self, content_type: &str) -> Result<Self> {
+    pub fn content_type(self, content_type: &str) -> Result<Self> {
         self.header("Content-Type", content_type)
     }
 
@@ -354,7 +351,7 @@ impl ResponseBuilder {
         // This is a limitation of the current reqwest version
         
         // Create cookie jar
-        let cookie_jar = Arc::new(CookieJar::new());
+        let _cookie_jar = Arc::new(CookieJar::new());
 
         // For now, we'll return an error since we can't create a proper reqwest response
         Err(Error::custom("ResponseBuilder::build is not supported in this version of reqwest"))

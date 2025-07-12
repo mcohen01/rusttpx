@@ -1,12 +1,9 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use async_trait::async_trait;
-use http::{Request, Response, HeaderMap, HeaderValue};
-use serde_json::Value;
+use http::{Request, Response, HeaderValue};
 
 use crate::error::{Error, Result};
-use crate::request::{Request as RusttpxRequest, RequestBuilder};
-use crate::response::Response as RusttpxResponse;
 
 /// Middleware trait for processing requests and responses
 ///
@@ -197,17 +194,13 @@ impl Middleware for AuthMiddleware {
 
 /// Retry middleware
 pub struct RetryMiddleware {
-    max_retries: usize,
-    retry_delay: std::time::Duration,
     retry_conditions: Vec<Box<dyn Fn(&Response<()>) -> bool + Send + Sync>>,
 }
 
 impl RetryMiddleware {
     /// Create a new retry middleware
-    pub fn new(max_retries: usize) -> Self {
+    pub fn new(_max_retries: usize) -> Self {
         Self {
-            max_retries,
-            retry_delay: std::time::Duration::from_secs(1),
             retry_conditions: vec![Box::new(|response| {
                 response.status().is_server_error() || response.status() == http::StatusCode::TOO_MANY_REQUESTS
             })],
@@ -215,8 +208,7 @@ impl RetryMiddleware {
     }
 
     /// Set the retry delay
-    pub fn retry_delay(mut self, delay: std::time::Duration) -> Self {
-        self.retry_delay = delay;
+    pub fn retry_delay(self, _delay: std::time::Duration) -> Self {
         self
     }
 
@@ -305,7 +297,6 @@ pub struct CacheMiddleware {
 }
 
 struct CachedResponse {
-    response: Response<()>,
     timestamp: std::time::Instant,
 }
 

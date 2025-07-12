@@ -1,7 +1,6 @@
 use std::path::PathBuf;
-use std::sync::Arc;
 use reqwest::{ClientBuilder as ReqwestBuilder, Certificate, Identity};
-use rustls::{ClientConfig, RootCertStore, Certificate as RustlsCertificate, PrivateKey};
+use rustls::{ClientConfig, RootCertStore, Certificate as RustlsCertificate};
 use rustls_native_certs::load_native_certs;
 
 use crate::error::{Error, Result};
@@ -199,7 +198,7 @@ impl TlsConfig {
         // Load native certificates if no custom ones are provided
         if self.root_certs.is_empty() && self.ca_cert_path.is_none() {
             if let Ok(certs) = load_native_certs() {
-                for cert in certs {
+                for _cert in certs {
                     // Note: CertificateDer field is private in this version
                     // We'll skip certificate validation for now
                     // if let Ok(cert) = Certificate::from_der(&cert.0) {
@@ -224,11 +223,11 @@ impl TlsConfig {
         }
 
         // Load client certificate if specified
-        if let Some(client_cert) = self.client_cert {
+        if let Some(_client_cert) = self.client_cert {
             // Note: identity method is not available in this version of reqwest
             // builder = builder.identity(client_cert);
         } else if let (Some(cert_path), Some(key_path)) = (self.client_cert_path, self.client_key_path) {
-            if let (Ok(cert_data), Ok(key_data)) = (std::fs::read(&cert_path), std::fs::read(&key_path)) {
+            if let (Ok(_cert_data), Ok(_key_data)) = (std::fs::read(&cert_path), std::fs::read(&key_path)) {
                 // Note: Identity::from_pkcs8_pem is not available in this version
                 // if let Ok(identity) = Identity::from_pkcs8_pem(&cert_data, &key_data) {
                 //     builder = builder.identity(identity);
@@ -250,7 +249,7 @@ impl TlsConfig {
 
         // Load native certificates
         if let Ok(certs) = load_native_certs() {
-            for cert in certs {
+            for _cert in certs {
                 // Note: CertificateDer field is private in this version
                 // root_store.add(&RustlsCertificate(cert.0))
                 //     .map_err(|e| Error::tls(format!("Failed to add native certificate: {}", e)))?;
@@ -258,7 +257,7 @@ impl TlsConfig {
         }
 
         // Add custom root certificates
-        for cert in &self.root_certs {
+        for _cert in &self.root_certs {
             // Convert reqwest Certificate to rustls Certificate
             // This is a simplified conversion - in practice you'd need to handle the format properly
         }
@@ -272,7 +271,7 @@ impl TlsConfig {
                 .map_err(|e| Error::tls(format!("Failed to add CA certificate: {}", e)))?;
         }
 
-        let mut config = ClientConfig::builder()
+        let config = ClientConfig::builder()
             .with_safe_defaults()
             .with_root_certificates(root_store)
             .with_no_client_auth();
