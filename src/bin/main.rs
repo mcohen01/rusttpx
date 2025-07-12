@@ -3,6 +3,72 @@ use http::Method;
 use rusttpx::Client;
 use std::time::Duration;
 use url::Url;
+use colored::*;
+
+fn print_basic_colorized_json(json: &str) {
+    // Parse the JSON to get proper data type information
+    match serde_json::from_str::<serde_json::Value>(json) {
+        Ok(value) => {
+            print_json_value(&value, 0);
+        }
+        Err(_) => {
+            // Fallback to simple line-by-line if parsing fails
+            for line in json.lines() {
+                println!("{}", line);
+            }
+        }
+    }
+}
+
+fn print_json_value(value: &serde_json::Value, indent: usize) {
+    let indent_str = "  ".repeat(indent);
+    match value {
+        serde_json::Value::Object(map) => {
+            println!("{}{}", indent_str, "{".white());
+            let mut entries: Vec<_> = map.iter().collect();
+            entries.sort_by(|a, b| a.0.cmp(b.0));
+            for (i, (key, val)) in entries.iter().enumerate() {
+                let is_last = i == entries.len() - 1;
+                print!("{}  {}\"{}\"{}: ",
+                    indent_str,
+                    "".white(),
+                    key.yellow(),
+                    "".white()
+                );
+                print_json_value(val, indent + 1);
+                if !is_last {
+                    print!("{}", ",".white());
+                }
+                println!();
+            }
+            print!("{}{}", indent_str, "}".white());
+        }
+        serde_json::Value::Array(arr) => {
+            println!("{}{}", indent_str, "[".white());
+            for (i, item) in arr.iter().enumerate() {
+                let is_last = i == arr.len() - 1;
+                print_json_value(item, indent + 1);
+                if !is_last {
+                    print!("{}", ",".white());
+                }
+                println!();
+            }
+            print!("{}{}", indent_str, "]".white());
+        }
+        serde_json::Value::String(s) => {
+            print!("\"{}\"", s.green());
+        }
+        serde_json::Value::Number(n) => {
+            print!("{}", n.to_string().bright_blue());
+        }
+        serde_json::Value::Bool(b) => {
+            print!("{}", b.to_string().bright_magenta());
+        }
+        serde_json::Value::Null => {
+            print!("{}", "null".bright_red());
+        }
+    }
+}
 
 #[derive(Parser)]
 #[command(name = "rusttpx")]
@@ -50,10 +116,6 @@ struct Cli {
     #[arg(long, default_value = "true")]
     show_body: bool,
     
-    /// Output format
-    #[arg(short, long, default_value = "text")]
-    format: OutputFormat,
-    
     /// Show version information
     #[arg(short, long)]
     version: bool,
@@ -86,13 +148,6 @@ impl From<MethodArg> for Method {
             MethodArg::OPTIONS => Method::OPTIONS,
         }
     }
-}
-
-#[derive(ValueEnum, Clone)]
-enum OutputFormat {
-    Text,
-    Json,
-    Headers,
 }
 
 #[derive(clap::Subcommand)]
@@ -150,45 +205,44 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Make the request
     let response = request_builder.send().await?;
 
-    // Display results based on format
-    match cli.format {
-        OutputFormat::Text => {
-            if cli.show_headers {
-                println!("Status: {}", response.status());
-                println!("Headers:");
-                for (name, value) in response.headers() {
-                    println!("  {}: {}", name, value.to_str().unwrap_or(""));
-                }
-                println!();
-            }
-            
-            if cli.show_body {
-                let body = response.text().await?;
-                println!("{}", body);
-            }
+    // Display results
+    if cli.show_headers {
+        // Colorize status code
+        let status = response.status();
+        let status_str = match status.as_u16() {
+            200..=299 => format!("{}", status).green().bold(),
+            300..=399 => format!("{}", status).yellow().bold(),
+            400..=599 => format!("{}", status).red().bold(),
+            _ => format!("{}", status).white().bold(),
+        };
+        println!("Status: {}", status_str);
+        
+        println!("Headers:");
+        for (name, value) in response.headers() {
+            println!("  {}: {}", name.to_string().cyan(), value.to_str().unwrap_or("").white());
         }
-        OutputFormat::Json => {
-            let mut headers_map = std::collections::HashMap::new();
-            for (name, value) in response.headers() {
-                headers_map.insert(name.to_string(), value.to_str().unwrap_or("").to_string());
-            }
-            
-            let json_response = serde_json::json!({
-                "status": response.status().as_u16(),
-                "headers": headers_map,
-                "body": if cli.show_body { 
-                    Some(response.text().await?) 
-                } else { 
-                    None 
+        println!();
+    }
+    
+    if cli.show_body {
+        let content_type = response.headers().get("content-type").and_then(|v| v.to_str().ok()).unwrap_or("").to_string();
+        let body = response.text().await?;
+
+        if content_type.contains("application/json") || content_type.contains("+json") {
+            // Pretty-print and colorize JSON body
+            match serde_json::from_str::<serde_json::Value>(&body) {
+                Ok(json_value) => {
+                    let pretty = serde_json::to_string_pretty(&json_value).unwrap_or(body.clone());
+                    print_basic_colorized_json(&pretty);
                 }
-            });
-            println!("{}", serde_json::to_string_pretty(&json_response)?);
-        }
-        OutputFormat::Headers => {
-            println!("Status: {}", response.status());
-            for (name, value) in response.headers() {
-                println!("{}: {}", name, value.to_str().unwrap_or(""));
+                Err(_) => {
+                    // If not valid JSON, just print as plain text
+                    println!("{}", body);
+                }
             }
+        } else {
+            // Not JSON, just print as plain text
+            println!("{}", body);
         }
     }
 
@@ -197,18 +251,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Commands::Test { base_url } => {
                 let base_url = base_url.parse::<Url>()?;
                 
-                println!("🧪 Testing rusttpx client with {}", base_url);
+                println!("{}", "🧪 Testing rusttpx client".blue().bold());
+                println!("Base URL: {}", base_url.to_string().cyan());
                 println!();
                 
                 // Test 1: Basic GET request
-                println!("1. Testing GET request...");
+                println!("{}", "1. Testing GET request...".yellow());
                 let response = client.get(base_url.join("/get")?).send().await?;
-                println!("   Status: {}", response.status());
+                let status = response.status();
+                let status_str = match status.as_u16() {
+                    200..=299 => format!("{}", status).green().bold(),
+                    300..=399 => format!("{}", status).yellow().bold(),
+                    400..=599 => format!("{}", status).red().bold(),
+                    _ => format!("{}", status).white().bold(),
+                };
+                println!("   Status: {}", status_str);
                 println!("   Content-Type: {:?}", response.headers().get("content-type").unwrap_or(&"".parse().unwrap()));
                 println!();
                 
                 // Test 2: POST with JSON
-                println!("2. Testing POST with JSON...");
+                println!("{}", "2. Testing POST with JSON...".yellow());
                 let json_data = serde_json::json!({
                     "test": "rusttpx",
                     "version": "0.1.0"
@@ -218,37 +280,53 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .json(&json_data)?
                     .send()
                     .await?;
-                println!("   Status: {}", response.status());
+                let status = response.status();
+                let status_str = match status.as_u16() {
+                    200..=299 => format!("{}", status).green().bold(),
+                    300..=399 => format!("{}", status).yellow().bold(),
+                    400..=599 => format!("{}", status).red().bold(),
+                    _ => format!("{}", status).white().bold(),
+                };
+                println!("   Status: {}", status_str);
                 println!();
                 
                 // Test 3: Custom headers
-                println!("3. Testing custom headers...");
+                println!("{}", "3. Testing custom headers...".yellow());
                 let response = client
                     .get(base_url.join("/headers")?)
                     .header("User-Agent", "rusttpx-cli/0.1.0")?
                     .header("X-Test-Header", "test-value")?
                     .send()
                     .await?;
-                println!("   Status: {}", response.status());
+                let status = response.status();
+                let status_str = match status.as_u16() {
+                    200..=299 => format!("{}", status).green().bold(),
+                    300..=399 => format!("{}", status).yellow().bold(),
+                    400..=599 => format!("{}", status).red().bold(),
+                    _ => format!("{}", status).white().bold(),
+                };
+                println!("   Status: {}", status_str);
                 let body = response.text().await?;
                 if body.contains("rusttpx-cli") {
-                    println!("   ✅ Custom headers sent successfully");
+                    println!("   {} Custom headers sent successfully", "✅".green());
                 }
                 println!();
                 
                 // Test 4: Error handling
-                println!("4. Testing error handling...");
+                println!("{}", "4. Testing error handling...".yellow());
                 match client.get(base_url.join("/status/404")?).send().await {
                     Ok(response) => {
-                        println!("   Status: {} (expected 404)", response.status());
+                        let status = response.status();
+                        let status_str = format!("{}", status).red().bold();
+                        println!("   Status: {} (expected 404)", status_str);
                     }
                     Err(e) => {
-                        println!("   ❌ Error: {}", e);
+                        println!("   {} Error: {}", "❌".red(), e.to_string().red());
                     }
                 }
                 println!();
                 
-                println!("✅ All tests completed!");
+                println!("{}", "✅ All tests completed!".green().bold());
             }
         }
     }
