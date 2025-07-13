@@ -1,11 +1,11 @@
 [package]
 name = "rusttpx"
-version = "0.1.0"
+version = "0.1.8"
 edition = "2021"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["Michael Cohen <michael.cohen@everlaw.com>"]
 description = "A next-generation HTTP client for Rust, inspired by Python's HTTPX"
 license = "BSD-3-Clause"
-repository = "https://github.com/yourusername/rusttpx"
+repository = "https://github.com/mcohen01/rusttpx"
 keywords = ["http", "client", "async", "request", "httpx"]
 categories = ["web-programming::http-client"]
 
