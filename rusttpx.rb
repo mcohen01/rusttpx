@@ -5,17 +5,17 @@ class Rusttpx < Formula
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://github.com/mcohen01/rusttpx/releases/download/v0.1.5/rusttpx-aarch64-apple-darwin"
-      sha256 "08c7fe78dff56dd8cddc953c4e66421e99fc7787e1e2364da9f902af554fd407"
+      url "https://github.com/mcohen01/rusttpx/releases/download/v0.1.6/rusttpx-aarch64-apple-darwin"
+      sha256 "d4cad6af6d3638ebe41e8d1b8e98028a7c5d56adf9df610abeb3eaa4185f91cc"
     else
-      url "https://github.com/mcohen01/rusttpx/releases/download/v0.1.5/rusttpx-x86_64-apple-darwin"
-      sha256 "02d4754079ee99fce9d1bc7ada3873f22bbd2946f111fedace10cc26eacb88c6"
+      url "https://github.com/mcohen01/rusttpx/releases/download/v0.1.6/rusttpx-x86_64-apple-darwin"
+      sha256 "c67e8bd5d99c59ef5a3a22156fa157818b5f703a1e3843009e0841268ea44b9d"
     end
   end
 
   on_linux do
-    url "https://github.com/mcohen01/rusttpx/releases/download/v0.1.5/rusttpx-x86_64-unknown-linux-gnu"
-    sha256 "b22f0b2c41d20b3857157979d2f1c55df0e5cca4403573f9edac4ed1296556ee"
+    url "https://github.com/mcohen01/rusttpx/releases/download/v0.1.6/rusttpx-x86_64-unknown-linux-gnu"
+    sha256 "77c7d687364ef9095d4c56dac22e3acd1cbc0609e5576f226077bfaf7d4dc6fe"
   end
 
   def install
