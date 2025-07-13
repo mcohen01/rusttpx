@@ -39,9 +39,18 @@ cargo build --release
 cargo install --git https://github.com/yourusername/rusttpx.git
 ```
 
-### Homebrew (Coming Soon)
+### Homebrew (Custom Tap)
 ```bash
+# Add the custom tap
+brew tap mcohen01/rusttpx
+
+# Install rusttpx
 brew install rusttpx
+```
+
+Or install directly from the tap:
+```bash
+brew install mcohen01/rusttpx/rusttpx
 ```
 
 ## Usage

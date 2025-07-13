@@ -76,13 +76,13 @@ fn print_json_value(value: &serde_json::Value, indent: usize) {
 #[command(version)]
 #[command(disable_version_flag = true)]
 struct Cli {
+    /// URL to request
+    #[arg(value_name = "URL")]
+    url: Option<String>,
+    
     /// HTTP method to use
     #[arg(short, long, default_value = "get")]
     method: MethodArg,
-    
-    /// URL to request
-    #[arg(value_name = "URL")]
-    url: String,
     
     /// Request headers (format: "Name: Value")
     #[arg(short = 'H', long, value_delimiter = ',')]
@@ -171,81 +171,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    let mut client_builder = Client::builder()
-        .timeout(Duration::from_secs(cli.timeout));
-
-    // Configure redirect following
-    if cli.no_follow_redirects {
-        client_builder = client_builder.no_redirect();
-    } else if cli.follow_redirects {
-        client_builder = client_builder.redirect(10); // Follow up to 10 redirects
-    }
-
-    let client = client_builder.build();
-
-    let url = cli.url.parse::<Url>()?;
-    let method: Method = cli.method.clone().into();
-
-    let mut request_builder = client.request(method, url);
-
-    // Add headers
-    for header in cli.headers {
-        if let Some((name, value)) = header.split_once(':') {
-            request_builder = request_builder.header(name.trim(), value.trim())?;
-        }
-    }
-
-    // Add body if provided
-    if let Some(body_content) = cli.body {
-        request_builder = request_builder
-            .header("Content-Type", &cli.content_type)?
-            .text(&body_content)?;
-    }
-
-    // Make the request
-    let response = request_builder.send().await?;
-
-    // Display results
-    if cli.show_headers {
-        // Colorize status code
-        let status = response.status();
-        let status_str = match status.as_u16() {
-            200..=299 => format!("{}", status).green().bold(),
-            300..=399 => format!("{}", status).yellow().bold(),
-            400..=599 => format!("{}", status).red().bold(),
-            _ => format!("{}", status).white().bold(),
-        };
-        println!("Status: {}", status_str);
-        
-        println!("Headers:");
-        for (name, value) in response.headers() {
-            println!("  {}: {}", name.to_string().cyan(), value.to_str().unwrap_or("").white());
-        }
-        println!();
-    }
-    
-    if cli.show_body {
-        let content_type = response.headers().get("content-type").and_then(|v| v.to_str().ok()).unwrap_or("").to_string();
-        let body = response.text().await?;
-
-        if content_type.contains("application/json") || content_type.contains("+json") {
-            // Pretty-print and colorize JSON body
-            match serde_json::from_str::<serde_json::Value>(&body) {
-                Ok(json_value) => {
-                    let pretty = serde_json::to_string_pretty(&json_value).unwrap_or(body.clone());
-                    print_basic_colorized_json(&pretty);
-                }
-                Err(_) => {
-                    // If not valid JSON, just print as plain text
-                    println!("{}", body);
-                }
-            }
-        } else {
-            // Not JSON, just print as plain text
-            println!("{}", body);
-        }
-    }
-
+    // Handle subcommands first
     if let Some(command) = cli.command {
         match command {
             Commands::Test { base_url } => {
@@ -257,6 +183,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 
                 // Test 1: Basic GET request
                 println!("{}", "1. Testing GET request...".yellow());
+                let client = Client::builder()
+                    .timeout(Duration::from_secs(cli.timeout))
+                    .build();
                 let response = client.get(base_url.join("/get")?).send().await?;
                 let status = response.status();
                 let status_str = match status.as_u16() {
@@ -327,7 +256,86 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!();
                 
                 println!("{}", "✅ All tests completed!".green().bold());
+                return Ok(());
             }
+        }
+    }
+
+    // Handle regular HTTP request
+    let url = cli.url.ok_or("URL is required. Use 'rusttpx <URL>' or 'rusttpx --help' for more information.")?;
+
+    let mut client_builder = Client::builder()
+        .timeout(Duration::from_secs(cli.timeout));
+
+    // Configure redirect following
+    if cli.no_follow_redirects {
+        client_builder = client_builder.no_redirect();
+    } else if cli.follow_redirects {
+        client_builder = client_builder.redirect(10); // Follow up to 10 redirects
+    }
+
+    let client = client_builder.build();
+
+    let url = url.parse::<Url>()?;
+    let method: Method = cli.method.clone().into();
+
+    let mut request_builder = client.request(method, url);
+
+    // Add headers
+    for header in cli.headers {
+        if let Some((name, value)) = header.split_once(':') {
+            request_builder = request_builder.header(name.trim(), value.trim())?;
+        }
+    }
+
+    // Add body if provided
+    if let Some(body_content) = cli.body {
+        request_builder = request_builder
+            .header("Content-Type", &cli.content_type)?
+            .text(&body_content)?;
+    }
+
+    // Make the request
+    let response = request_builder.send().await?;
+
+    // Display results
+    if cli.show_headers {
+        // Colorize status code
+        let status = response.status();
+        let status_str = match status.as_u16() {
+            200..=299 => format!("{}", status).green().bold(),
+            300..=399 => format!("{}", status).yellow().bold(),
+            400..=599 => format!("{}", status).red().bold(),
+            _ => format!("{}", status).white().bold(),
+        };
+        println!("Status: {}", status_str);
+        
+        println!("Headers:");
+        for (name, value) in response.headers() {
+            println!("  {}: {}", name.to_string().cyan(), value.to_str().unwrap_or("").white());
+        }
+        println!();
+    }
+    
+    if cli.show_body {
+        let content_type = response.headers().get("content-type").and_then(|v| v.to_str().ok()).unwrap_or("").to_string();
+        let body = response.text().await?;
+
+        if content_type.contains("application/json") || content_type.contains("+json") {
+            // Pretty-print and colorize JSON body
+            match serde_json::from_str::<serde_json::Value>(&body) {
+                Ok(json_value) => {
+                    let pretty = serde_json::to_string_pretty(&json_value).unwrap_or(body.clone());
+                    print_basic_colorized_json(&pretty);
+                }
+                Err(_) => {
+                    // If not valid JSON, just print as plain text
+                    println!("{}", body);
+                }
+            }
+        } else {
+            // Not JSON, just print as plain text
+            println!("{}", body);
         }
     }
 
